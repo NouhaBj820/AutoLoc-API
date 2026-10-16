@@ -9,11 +9,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 import tn.esprit.autoloc.domain.Agence;
 import tn.esprit.autoloc.domain.CategorieVehicule;
 import tn.esprit.autoloc.domain.StatutVehicule;
 import tn.esprit.autoloc.domain.Vehicule;
 import tn.esprit.autoloc.repository.IAgenceRepository;
+import tn.esprit.autoloc.service.IAgenceService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +29,9 @@ public class AgenceTests {
 
     @Autowired
     private IAgenceRepository fullAgenceRepository;
+
+    @Autowired
+    private IAgenceService agenceService;
 
     @Test
     public void basicAddAgence() {
@@ -49,6 +54,22 @@ public class AgenceTests {
     }
 
     @Test
+    public void createAgence() {
+        Agence agence = new Agence();
+        agence.setNom("Agence ariana");
+        agence.setVille("Tunis");
+        agence.setAdresse("1 Rue Hedi");
+        agence.setTelephone("71585874");
+
+        Agence createdAgence = agenceService.create(agence);
+
+        Assertions.assertNotNull(createdAgence);
+        Assertions.assertNotNull(createdAgence.getIdAgence());
+        Assertions.assertEquals(agence.getNom(), createdAgence.getNom());
+        Assertions.assertEquals(agence.getVille(), createdAgence.getVille());
+    }
+
+    @Test
     public void loadSortedAgences() {
         Sort sort = Sort.by("idAgence").descending();
         List<Agence> agences = fullAgenceRepository.findAll(sort);
@@ -68,17 +89,23 @@ public class AgenceTests {
     public void loadPagedAgences() {
         Sort sort = Sort.by("idAgence").descending();
         Pageable pageable = PageRequest.of(0, 2, sort);
-        Page<Agence> page = fullAgenceRepository.findAll(pageable);
+        Page<Agence> page;
 
         StringBuilder sb = new StringBuilder();
-        sb.append("\nTotal pages : ").append(page.getTotalPages());
-        sb.append("\nPage en cours : ").append(page.getNumber());
-        for (Agence agence : page.getContent()) {
-            sb.append("\n").append(agence.getIdAgence()).append(" | ").append(agence.getNom())
-                    .append(" | ").append(agence.getVille())
-                    .append(" | ").append(agence.getAdresse())
-                    .append(" | ").append(agence.getTelephone());
-        }
+        do {
+            page = fullAgenceRepository.findAll(pageable);
+
+            sb.append("\nTotal pages : ").append(page.getTotalPages());
+            sb.append("\nPage en cours : ").append(page.getNumber());
+            for (Agence agence : page.getContent()) {
+                sb.append("\n").append(agence.getIdAgence()).append(" | ").append(agence.getNom())
+                        .append(" | ").append(agence.getVille())
+                        .append(" | ").append(agence.getAdresse())
+                        .append(" | ").append(agence.getTelephone());
+            }
+
+            pageable = pageable.next();
+        } while (page.hasNext());
 
         Assertions.fail(sb.toString());
     }
@@ -132,5 +159,6 @@ public class AgenceTests {
     }
 }
 
+@Repository
 interface AgenceRepositoryMock extends CrudRepository<Agence, Long> {
 }
